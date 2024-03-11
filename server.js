@@ -1,4 +1,5 @@
 const express = require('express');
+const router = express.Router();
 const association = require('./util/dbAssoc');
 
 const app = express();
@@ -13,10 +14,12 @@ app.use(function (req, res, next) {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.use(router);
+
 app.get("/", (req,res,next)=>{
   console.log("test");
   res.json({
-    message: "Hello from another service"
+    message: "Hello Kelompok 4"
   })
 })
 
