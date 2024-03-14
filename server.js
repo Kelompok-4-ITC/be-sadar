@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Router();
+const Router = require('./routes/router');
 const association = require('./util/dbAssoc');
 
 const app = express();
@@ -14,12 +14,11 @@ app.use(function (req, res, next) {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use(router);
+app.use(Router);
 
-app.get("/", (req,res,next)=>{
-  console.log("test");
-  res.json({
-    message: "Hello Kelompok 4"
+app.use("/", (req,res,next)=>{
+  res.status(404).json({
+    message: "Resource not found!"
   })
 })
 

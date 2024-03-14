@@ -10,15 +10,15 @@ const pickUp = sequelize.define("pickUp",{
   },
   totalHarga:{
     type: Sequelize.INTEGER,
-    allowNull: false
+    allowNull: true
   },
   fotoBukti:{
     type: Sequelize.STRING,
-    allowNull: false
+    allowNull: true
   },
   videoBukti:{
     type: Sequelize.STRING,
-    allowNull: false
+    allowNull: true
   },
 });
 

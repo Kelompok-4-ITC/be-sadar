@@ -16,6 +16,10 @@ const User = sequelize.define('users',{
     type: Sequelize.STRING,
     allowNull: false
   },
+  email:{
+    type: Sequelize.STRING,
+    allowNull: false
+  },
   password:{
     type: Sequelize.STRING,
     allowNull: false
@@ -25,12 +29,13 @@ const User = sequelize.define('users',{
     allowNull: false
   },
   tanggalLahir:{
-    type: Sequelize.DATE,
-    allowNull: false
+    type: Sequelize.DATEONLY,
+    allowNull: false,
   },
   tanggalGabung:{
-    type: Sequelize.DATE,
-    allowNull: false
+    type: Sequelize.DATEONLY,
+    allowNull: false,
+    defaultValue: Sequelize.NOW
   },
   fotoProfile:{
     type: Sequelize.STRING,
@@ -45,6 +50,8 @@ const User = sequelize.define('users',{
     defaultValue: 0,
     allowNull: false
   }
+},{
+  timestamps: false
 })
 
 module.exports = User;

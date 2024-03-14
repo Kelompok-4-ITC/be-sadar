@@ -10,20 +10,20 @@ const Sampah = sequelize.define("sampah",{
   },
   deskripsiSampah:{
     type: Sequelize.STRING,
-    allowNull: false
+    allowNull: true
   },
   hargaSampah:{
     type: Sequelize.INTEGER,
-    allowNull: false
+    allowNull: true
   },
   beratSampah:{
     type: Sequelize.INTEGER,
-    allowNull: false
+    allowNull: true
   },
-  beratSampah:{
-    type: Sequelize.INTEGER,
-    allowNull: false
-  }
+  fotoSampah:{
+    type: Sequelize.STRING,
+    allowNull: true
+  },
 },{
     timestamps: false
 });

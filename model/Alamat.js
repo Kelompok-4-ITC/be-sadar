@@ -11,6 +11,10 @@ const Alamat = sequelize.define('alamat',{
   alamatLengkap:{
     type: Sequelize.STRING,
     allowNull: false
+  },
+  tujuan:{
+    type: Sequelize.ENUM("pickUp","dropOff"),
+    allowNull: false
   }
 },{
   timestamps: false

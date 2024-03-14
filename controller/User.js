@@ -7,31 +7,13 @@ const Role = require('../model/Role');
 const key = process.env.TOKEN_SECRET_KEY;
 const cloudinary = require('../util/cloudinary_config');
 const fs = require('fs');
+const Alamat = require('../model/Alamat');
 
 const postUser = async(req,res,next) => {
     try {
         const{
-            userName, email, password, role
+            userName, email, password, role, fullName, tanggalLahir, noHP
         }=req.body
-
-        const checkUser = await User.findOne({
-            where:{
-                [Op.or]: [
-                    {
-                        email : email
-                    },
-                    {
-                        userName : userName
-                    }
-                ]
-            },
-        });
-
-        if (checkUser != undefined){
-            const error = new Error(`Username atau email sudah dipakai. Mohon Ganti`);
-            error.statusCode = 409;
-            throw error
-        }
 
         if (password.length<5) {
             const error = new Error(`Password harus memiliki 5 karakter`);
@@ -39,15 +21,43 @@ const postUser = async(req,res,next) => {
             throw error
         }
 
+        if (noHP.length<10) {
+            const error = new Error(`Nomor HP Anda Tidak Valid. Mohon Cek Kembali`);
+            error.statusCode = 400;
+            throw error
+        }
+
+        const checkUser = await User.findOne({
+            where:{
+                [Op.or]: [
+                    {
+                        email: email
+                    },
+                    {
+                        userName: userName
+                    },
+                    {
+                        noHP: noHP
+                    }
+                ]
+            },
+        });
+
+        if (checkUser){
+            const error = new Error(`Username, email, noHP sudah dipakai. Mohon Ganti`);
+            error.statusCode = 409;
+            throw error
+        }
+
         const hashedPassword=await bcrypt.hash(password, 5);
 
         const roleUser = await Role.findOne({
             where:{
-                nameRole: role
+                namaRole: role
             }
         });
 
-        if (roleUser == undefined) {
+        if (!roleUser) {
             const error = new Error(`Role ${role} belum terbuat`);
             error.statusCode = 404;
             throw error
@@ -58,6 +68,8 @@ const postUser = async(req,res,next) => {
             email,
             password : hashedPassword,
             fullName,
+            tanggalLahir,
+            noHP,
             idRole: roleUser.idRole
         });
 
@@ -100,12 +112,12 @@ const loginHandler = async(req, res, next)=>{
             },
             include: {
               model: Role,
-              attributes: ['nameRole']
+              attributes: ['namaRole']
             }
         })
 
-        if(currentUser == undefined){
-            const error = new Error("wrong account or password");
+        if(!currentUser){
+            const error = new Error("Salah akun atau password");
             error.statusCode = 400;
             throw error;
         }
@@ -113,7 +125,7 @@ const loginHandler = async(req, res, next)=>{
         const checkPassword = await bcrypt.compare(password, currentUser.password); 
 
         if (checkPassword == false){
-            const error = new Error("wrong account or password");
+            const error = new Error("Salah akun atau password");
             error.statusCode = 400;
             throw error;
         }
@@ -121,7 +133,7 @@ const loginHandler = async(req, res, next)=>{
 
         const token = jwt.sign({
             Id: currentUser.idUser,
-            Role: currentUser.role.nameRole
+            Role: currentUser.namaRole
         }, key,{
             algorithm: "HS256"
         })
@@ -157,10 +169,6 @@ const editUserAccount = async(req, res, next) => {
         const currentUser = await User.findOne({
             where: {
              idUser : decoded.Id,
-            },
-            include: {
-              model: Role,
-              attributes: ['nameRole']
             }
         });
       
@@ -170,12 +178,28 @@ const editUserAccount = async(req, res, next) => {
             throw error;
         }
 
+        if(req.body.email){
+            const checkUser = await User.findOne({
+                where:{
+                    email: req.body.email
+                }
+            });
+
+            if (checkUser) {
+                const error = new Error("email sudah dipakai");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            currentUser.email = req.body.email
+        }
+
         let imageUrl;
-        if (req.file.fotoProfile) {
+        if (req.file) {
             const file = req.file.fotoProfile;
 
             const uploadOption={
-                folder:'fotoProfile',
+                folder:'fotoProfile/',
                 public_id:`user_${currentUser.idUser}`,
                 overWrite:true
             }
@@ -184,31 +208,11 @@ const editUserAccount = async(req, res, next) => {
             imageUrl=uploadFile.secure_url
             //menghapus file yang diupload dalam local
             fs.unlinkSync(file.path);
-            currentUser.profilePicture=imageUrl;
-        }
-
-        if (req.file.fotoBG) {
-            const file = fotoBG;
-
-            const uploadOption={
-                folder:'fotoBG/',
-                public_id:`user_${currentUser.idUser}`,
-                overWrite:true
-            }
-
-            const uploadFile=await cloudinary.uploader.upload(file.path,uploadOption)
-            imageUrl=uploadFile.secure_url
-            //menghapus file yang diupload dalam local
-            fs.unlinkSync(file.path);
-            currentUser.profilePicture=imageUrl;
+            currentUser.fotoProfile=imageUrl;
         }
 
         if (req.body.fullName){
             currentUser.fullName = req.body.fullName;
-        }
-
-        if(req.body.email){
-            currentUser.email = req.body.email
         }
       
         if (req.body.password){
@@ -226,13 +230,7 @@ const editUserAccount = async(req, res, next) => {
         res.status(200).json({
             status: "Success",
             message:"Succesfully edit user data",
-            user:{
-                fullname:currentUser.fullName,
-                userName:currentUser.userName,
-                email:currentUser.email,
-                fotoProfile:currentUser.fotoProfile,
-                fotoBackground:currentUser.fotoBG
-            }
+            currentUser
         });
 
     } catch (error) {
@@ -243,7 +241,54 @@ const editUserAccount = async(req, res, next) => {
     }
 }
 
-const getUserByToken = async(req, res, next) => {
+const getUserDetail = async(req, res, next) => {
+    try {
+        const authorization = req.headers.authorization;
+        let token;
+        if(authorization !== null & authorization.startsWith("Bearer ")){
+            token = authorization.substring(7); 
+        }else{  
+            const error = new Error("You need to login");
+            error.statusCode = 403;
+            throw error;
+        }
+      
+        const decoded = jwt.verify(token, key);
+
+        const loggedUser = await User.findOne({
+            attributes:[
+                'fullName', 'userName', 'email', 'noHP', 'tanggalLahir', 'tanggalGabung', 'fotoProfile', 'fotoBG'
+            ],
+            where: {
+                idUser: decoded.Id,
+            },
+            include: {
+                model: Role,
+                attributes: ['namaRole']
+            }
+        });
+
+        if (!loggedUser) {
+            const error = new Error(`User with id ${decoded.id} not exist!`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        res.status(200).json({
+            status: "Success",
+            message: "Successfuly fetch user data",
+            loggedUser
+        })
+
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            status: "Error",
+            message: error.message
+        })
+    }
+}
+
+const getAlamatByToken = async(req, res, next) => {
     try {
         const authorization = req.headers.authorization;
         let token;
@@ -260,10 +305,6 @@ const getUserByToken = async(req, res, next) => {
         const loggedUser = await User.findOne({
             where: {
                 idUser: decoded.Id,
-            },
-            include: {
-              model: Role,
-              attributes: ['nameRole']
             }
         });
 
@@ -273,17 +314,17 @@ const getUserByToken = async(req, res, next) => {
             throw error;
         }
 
+        const alamatUser = await Alamat.findAll({
+            attributes:['alamatLengkap','tujuan'],
+            where: {
+                idUser: loggedUser.idUser
+            }
+        })
+
         res.status(200).json({
             status: "Success",
-            message: "Successfuly fetch user data",
-            user:{
-              fullname: loggedUser.fullName,
-              userName: loggedUser.userName,
-              profilePicture: loggedUser.profilePicture,
-              saldo: loggedUser.saldo,
-              role: loggedUser.role.nameRole,
-              tanggalBuat: loggedUser.createdAt
-            }
+            message: "Successfuly fetch Alamat",
+            alamatUser
         })
 
     } catch (error) {
@@ -294,4 +335,84 @@ const getUserByToken = async(req, res, next) => {
     }
 }
 
-module.exports={postUser, loginHandler, editUserAccount, getUserByToken}
+const postAlamatByToken = async(req, res, next) => {
+    try {
+        const authorization = req.headers.authorization;
+        let token;
+        if(authorization !== null & authorization.startsWith("Bearer ")){
+            token = authorization.substring(7); 
+        }else{  
+            const error = new Error("You need to login");
+            error.statusCode = 403;
+            throw error;
+        }
+      
+        const decoded = jwt.verify(token, key);
+
+        const loggedUser = await User.findOne({
+            where: {
+                idUser: decoded.Id,
+            }
+        });
+
+        if (!loggedUser) {
+            const error = new Error(`User with id ${decoded.id} not exist!`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const {alamatLengkap, tujuan} = req.body
+
+        const alamat = await Alamat.create({
+            alamatLengkap,
+            idUser: loggedUser.idUser,
+            tujuan
+        })
+
+        if (!alamat) {
+            const error = new Error(`Alamat yang dikirim error. Mohon Dicoba Kembali`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        res.status(200).json({
+            status: "Success",
+            message: "Successfuly register alamat",
+            Alamat: alamat.alamatLengkap
+        })
+
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            status: "Error",
+            message: error.message
+        })
+    }
+}
+
+const getRiwayatByToken = async(req, res, next) => {
+    try {
+        const authorization = req.headers.authorization;
+        let token;
+        if(authorization !== null & authorization.startsWith("Bearer ")){
+            token = authorization.substring(7); 
+        }else{  
+            const error = new Error("You need to login");
+            error.statusCode = 403;
+            throw error;
+        }
+
+        res.status(200).json({
+            status: "Success",
+            message: "Successfuly fetch riwayat user data",
+            loggedUser
+        })
+
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            status: "Error",
+            message: error.message
+        })
+    }
+}
+
+module.exports={postUser, loginHandler, editUserAccount, getUserDetail, getAlamatByToken, postAlamatByToken, getRiwayatByToken}
