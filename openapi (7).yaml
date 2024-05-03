@@ -1185,7 +1185,3 @@ paths:
                   message:
                     type: string
                     example: Success update status order to selesai!
-  /C:/Folder Penyimpanan/Dokumen/ITC/Project/file/OIP.jpeg: {}
-  /C:\Folder Penyimpanan\Dokumen\ITC\Project\file\OIP.jpeg: {}
-  /C:/Folder Penyimpanan/Dokumen/ITC\Project/file/OIP.jpeg:
-    summary: image
