@@ -1,11 +1,12 @@
 const sequelize = require("./db_connect");
 const User = require('../model/User');
-const Alamat = require('../model/Alamat');
 const kategoriSampah = require('../model/kategoriSampah');
 const pickUp = require('../model/PickUp');
 const Role = require('../model/Role');
 const Sampah = require('../model/Sampah');
-const Status = require('../model/Status')
+const Status = require('../model/Status');
+const Barang = require("../model/Barang");
+const Chat = require("../model/Chat");
 
 const role_user = [
   {namaRole: "Customer"},
@@ -37,8 +38,8 @@ Role.hasMany(User, {foreignKey: 'idRole'});
 User.belongsTo(Role, {foreignKey: 'idRole'});
 
 //user dan alamat
-Alamat.belongsTo(User, {foreignKey: 'idUser'});
-User.hasMany(Alamat, {foreignKey: 'idUser'});
+// Alamat.belongsTo(User, {foreignKey: 'idUser'});
+// User.hasMany(Alamat, {foreignKey: 'idUser'});
 
 //untuk table pickup
 //pickup dengan user customer
@@ -48,7 +49,6 @@ pickUp.belongsTo(User, {as: 'Customer', foreignKey: 'idCustomer'});
 
 //pickup dengan user driver
 User.hasMany(pickUp, {as: 'Driver', foreignKey: 'idDriver'});
-
 pickUp.belongsTo(User, {as: 'Driver', foreignKey: 'idDriver'});
 
 //pickup dan status
@@ -61,6 +61,21 @@ Sampah.belongsTo(pickUp, {foreignKey: 'idPickUp'});
 kategoriSampah.hasMany(Sampah, {foreignKey: 'idKategoriSampah'});
 Sampah.belongsTo(kategoriSampah, {foreignKey: 'idKategoriSampah'});
 
+//pickup dan alamat
+// Alamat.hasMany(pickUp, {foreignKey: 'idAlamat'});
+// pickUp.belongsTo(Alamat, {foreignKey: 'idAlamat'});
+
+pickUp.hasMany(Barang, {foreignKey: 'idPickUp'});
+Barang.belongsTo(pickUp, {foreignKey: 'idPickUp'});
+
+//chat
+Chat.belongsTo(pickUp, {foreignKey: 'idPickUp'});
+pickUp.hasMany(Chat, {foreignKey: 'idPickUp'});
+
+Chat.belongsTo(User, {foreignKey: 'messageBy'});
+User.hasMany(Chat, {foreignKey: 'messageBy'});
+
+
 const association = async ()=>{
   try {
       // await sequelize.sync({force: true});
@@ -72,4 +87,15 @@ const association = async ()=>{
   }
 }
 
-module.exports = association; 
+const asso = async ()=>{
+  try {
+      await sequelize.sync({force: true});
+      await Role.bulkCreate(role_user);
+      await kategoriSampah.bulkCreate(kategori_sampah);
+      await Status.bulkCreate(nama_status);
+  } catch (error) {
+      console.log(error.message);
+  }
+}
+
+module.exports = {association, asso}; 

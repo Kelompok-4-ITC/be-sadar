@@ -3,10 +3,9 @@ const sequelize = require("../util/db_connect");
 
 const pickUp = sequelize.define("pickUp",{
   idPickUp:{
-    type: Sequelize.INTEGER,
+    type: Sequelize.STRING,
     allowNull: false,
-    primaryKey: true,
-    autoIncrement: true
+    primaryKey: true
   },
   totalHarga:{
     type: Sequelize.INTEGER,
@@ -20,6 +19,10 @@ const pickUp = sequelize.define("pickUp",{
     type: Sequelize.STRING,
     allowNull: true
   },
+  alamat:{
+    type: Sequelize.STRING,
+    allowNull: false
+  }
 });
 
 module.exports = pickUp;

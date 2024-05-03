@@ -1,6 +1,6 @@
 const express = require('express');
 const Router = require('./routes/router');
-const association = require('./util/dbAssoc');
+const {association, asso} = require('./util/dbAssoc');
 
 const app = express();
 

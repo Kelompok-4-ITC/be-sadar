@@ -1,27 +1,31 @@
 const Sequelize = require("sequelize");
 const sequelize = require("../util/db_connect");
 
-const Sampah = sequelize.define("sampah",{
-  idSampah:{
+const Barang = sequelize.define("barang",{
+  idBarang:{
     type: Sequelize.INTEGER,
     allowNull: false,
     primaryKey: true,
     autoIncrement: true
   },
-  deskripsiSampah:{
+  namaBarang:{
     type: Sequelize.STRING,
     allowNull: true
   },
-  hargaSampah:{
-    type: Sequelize.FLOAT,
+  deskripsiBarang:{
+    type: Sequelize.STRING,
     allowNull: true
   },
-  beratSampah:{
+  hargaBarang:{
     type: Sequelize.INTEGER,
+    allowNull: true
+  },
+  fotoBarang:{
+    type: Sequelize.STRING,
     allowNull: true
   },
 },{
     timestamps: false
 });
 
-module.exports = Sampah;
+module.exports = Barang;

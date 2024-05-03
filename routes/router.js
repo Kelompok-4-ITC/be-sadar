@@ -1,21 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/upload_file');
+const {multer, streamUpload} = require('../middleware/upload_file');
 const User = "/user";
 const pickUp = "/pickUp";
 const Chat = "/chat";
+const Process = "/process"
+const Achievement = "/achievement"
+
 
 const { 
-  postUser, loginHandler, editUserAccount, getUserDetail, getAlamatByToken, postAlamatByToken, getRiwayatByToken
+  postUser, loginHandler, editFotoProfile, editUserAccount, getUserDetail
 } = require('../controller/User');
 
 const {
-  makeOrder, takeOrder, pencatatanOrder, konfirmasiOrder, finishOrder
+  makeOrder, listDriverOrder, detailListDriverOrder, takeOrder, pencatatanOrder, konfirmasiOrder,
+  takeSampahBarang,
+  listSampah,
 } = require('../controller/pickup');
 
+const {
+  listOrder, listOrderFilter, detailOrder
+} = require('../controller/process');
+
 const { 
-  listChat, sendChat, receiveChat
+  listChat, listChatFilter, sendChat, receiveChat,
 } = require('../controller/chat');
+
+const {
+  association, asso
+} = require('../util/dbAssoc')
+
+//reset db
+router.put("/reset-db", asso);
 
 //Register user
 router.post("/register", postUser);
@@ -24,38 +40,49 @@ router.post("/register", postUser);
 router.post("/login", loginHandler);
 
 //edit user dari token
-router.put(User + "/edit-user", upload.single('image'), editUserAccount);
+router.put(User + "/edit-fotoProfile", multer.single('image'), editFotoProfile);
 
+router.put(User + "/edit-user", editUserAccount)
 
 //dapat user dari token
 router.get(User + "/fetch-user", getUserDetail);
 
-//dapat alamat user dari token
-router.get(User + "/fetch-alamat", getAlamatByToken);
-
-//POST alamat user dari token
-router.post(User + "/register-alamat", postAlamatByToken);
-
-//dapat riwayat transaksi user dari token
-//belum
-router.get(User + "/fetch-riwayat", getRiwayatByToken);
-
 //chat
-// router.get(Chat + "/", listChat);
+//list room chat
+router.get(Chat + "/list-chat", listChat);
 
-// router.post(Chat + "/send-chat", sendChat);
+//list room chat filtered
+router.get(Chat + "/list-chat/:targetName", listChatFilter);
 
-// router.get(Chat + "/receive-chat", receiveChat);
+//mengirim pesan
+router.post(Chat + "/send-chat/:kodeOrder", sendChat);
+
+//menerima semua pesan
+router.get(Chat + "/receive-chat/:kodeOrder", receiveChat);
+
+//list process
+router.get(Process + "/list-order", listOrder);
+
+router.get(Process + "/list-order/jenisOrder=:jenisOrder", listOrderFilter);
+
+//detail process
+router.get(Process + "/detail-order/jenisOrder=:jenisOrder&kodeOrder=:kodeOrder", detailOrder)
 
 //membuat orderan pickup dari customer
-router.post(pickUp + "/make-order", makeOrder);
+router.post(pickUp + "/make-order", multer.any('fotoBarang'), makeOrder);
 
-router.put(pickUp + "/take-order/:idOrder", takeOrder);
+router.get(pickUp + "/list-order", listDriverOrder);
 
-router.put(pickUp + "/pengecekan-order/:idOrder", pencatatanOrder);
+router.get(pickUp + "/list-order/:kodeOrder", detailListDriverOrder)
 
-router.put(pickUp + "/konfirmasi-order/:idOrder", konfirmasiOrder);
+router.put(pickUp + "/take-order/:kodeOrder", takeOrder);
 
-router.put(pickUp + "/finish-order/:idOrder", finishOrder);
+router.put(pickUp + "/take-sampah-order/:kodeOrder", takeSampahBarang);
+
+router.get(pickUp + "/pengecekan-order/:kodeOrder", listSampah);
+
+router.put(pickUp + "/pengecekan-order/:kodeOrder", multer.array('bukti', 2), pencatatanOrder);
+
+router.put(pickUp + "/konfirmasi-order/:kodeOrder", konfirmasiOrder);
 
 module.exports = router;

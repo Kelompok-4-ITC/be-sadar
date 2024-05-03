@@ -1,0 +1,1191 @@
+openapi: 3.0.3
+info:
+  title: Bank Sampah
+  version: 1.0.1
+servers:
+  - url: http://localhost:8080
+  - url: https://kelompok4-dot-personal-website-415207.et.r.appspot.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /register:
+    post:
+      summary: Register user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userName:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum:
+                    - Driver
+                    - Customer
+                fullName:
+                  type: string
+                tanggalLahir:
+                  type: string
+                noHP:
+                  type: string
+              required:
+                - userName
+                - email
+                - password
+                - role
+                - fullName
+                - tanggalLahir
+                - noHP
+            examples:
+              Customer:
+                summary: Customer
+                value:
+                  userName: "b"
+                  email: "bcd@gmail.com"
+                  password: "12345"
+                  role: "Customer"
+                  fullName: "Udin Customer"
+                  tanggalLahir: "1990-01-01"
+                  noHP: "0812345677"
+              Driver:
+                summary: Driver
+                value:
+                  userName: "ahmad"
+                  email: "ahmad123@gmail.com"
+                  password: "12345"
+                  fullName: "Ahmad Driver"
+                  tanggalLahir: "1990-01-01"
+                  noHP: "0812345678"
+                  role: "Driver"
+      responses:
+        '201':
+          description: Register successful!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Register successful!"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "error"
+                  message:
+                    type: string
+                    example: "Data yang diperlukan belum lengkap: username, email, password, role, fullName, tanggalLahir, noHP"
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "error"
+                  message:
+                    type: string
+                    example: "Username, email, atau noHP sudah dipakai. Mohon Ganti"
+  /login:
+    post:
+      summary: Login user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                loginUser:
+                  type: string
+                password:
+                  type: string
+              required:
+                - loginUser
+                - password
+            examples:
+              Customer:
+                summary: Customer
+                value:
+                  loginUser: "b"
+                  password: "12345"
+              Driver:
+                summary: Driver
+                value:
+                  loginUser: "ahmad"
+                  password: "12345"
+      responses:
+        '200':
+          description: Login successful!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  message:
+                    type: string
+                    example: "Login Successfull!"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "Data yang diperlukan belum lengkap: loginUser, password"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "Salah akun atau password"
+  /user/edit-fotoProfile:
+    put:
+      summary: Edit foto profile
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+              required:
+                - image
+      responses:
+        '200':
+          description: Successfully edit foto profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  message:
+                    type: string
+                    example: "Succesfully edit foto profile"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "Anda tidak mengirimkan file apa-apa"
+          
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "You need to login"
+  /user/edit-user:
+    put:
+      summary: Edit user account
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: bcde@gmail.com
+                fullName:
+                  type: string
+                  example: Ahmad Customer
+                alamat:
+                  type: string
+                  example: Jalan Durian Runtuh No.1
+                tanggalLahir:
+                  type: string
+                  example: 2000-01-01
+                jenisKelamin:
+                  type: string
+                  enum: ["Pria", "Perempuan"]
+      responses:
+        '200':
+          description: Successfully edit user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  message:
+                    type: string
+                    example: "Succesfully edit user data"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "email sudah dipakai"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "You need to login"
+  /user/fetch-user:
+    get:
+      summary: Fetch user detail
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      responses:
+        '200':
+          description: Successfully fetch user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  message:
+                    type: string
+                    example: "Successfuly fetch user data"
+                  loggedUser:
+                    type: object
+                    properties:
+                      fullName:
+                        type: string
+                        example: "Ahmad Customer"
+                      userName:
+                        type: string
+                        example: "ahmad"
+                      email:
+                        type: string
+                        example: "ahmad@gmail.com"
+                      noHP:
+                        type: string
+                        example: "08123456789"
+                      alamat:
+                        type: string
+                        example: "Jalan Durian Runtuh No.1"
+                      jenisKelamin:
+                        type: string
+                        enum:
+                          - Pria
+                          - Perempuan
+                        example: "Pria"
+                      tanggalLahir:
+                        type: string
+                        example: "2000-01-01"
+                      fotoProfile:
+                        type: string
+                        example: "https://example.com/foto.jpg"
+                      role:
+                        type: object
+                        properties:
+                          namaRole:
+                            type: string
+                            example: "Customer"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "User with id 1 not exist!"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  message:
+                    type: string
+                    example: "You need to login"
+  /chat/list-chat:
+    get:
+      summary: List chat
+      security:
+        - bearerAuth: []
+      tags:
+        - Chat
+      responses:
+        '200':
+          description: Successfully fetch list chat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  listChat:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idPickUp:
+                          type: string
+                        Customer:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                            fotoProfile:
+                              type: string
+                        Driver:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                            fotoProfile:
+                              type: string
+                        lastMessage:
+                          type: object
+                          properties:
+                            message:
+                              type: string
+                            createdAt:
+                              type: string
+  /chat/list-chat/{targetName}:
+    get:
+      summary: List chat filtered
+      security:
+        - bearerAuth: []
+      tags:
+        - Chat
+      parameters:
+        - in: path
+          name: targetName
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully fetch list chat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  listChat:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idPickUp:
+                          type: string
+                        Customer:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                            fotoProfile:
+                              type: string
+                        Driver:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                            fotoProfile:
+                              type: string
+                        lastMessage:
+                          type: object
+                          properties:
+                            message:
+                              type: string
+                            createdAt:
+                              type: string
+  /chat/send-chat/{kodeOrder}:
+    post:
+      summary: Send chat
+      security:
+        - bearerAuth: []
+      tags:
+        - Chat
+      parameters:
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+      responses:
+        '201':
+          description: Send chat successful!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  /chat/receive-chat/{kodeOrder}:
+    get:
+      summary: Receive chat
+      security:
+        - bearerAuth: []
+      tags:
+        - Chat
+      parameters:
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Receive chat successful!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  roomChat:
+                    type: object
+                    properties:
+                      idPickUp:
+                        type: string
+                      Customer:
+                        type: object
+                        properties:
+                          fullName:
+                            type: string
+                          fotoProfile:
+                            type: string
+                      Driver:
+                        type: object
+                        properties:
+                          fullName:
+                            type: string
+                          fotoProfile:
+                            type: string
+                      listMessage:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            message:
+                              type: string
+                            createdAt:
+                              type: string
+                            fullName:
+                              type: string
+  /process/list-order:
+    get:
+      summary: List order
+      security:
+        - bearerAuth: []
+      tags:
+        - Process
+      responses:
+        '200':
+          description: Successfully fetch list order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  listPickUp:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idPickUp:
+                          type: string
+                        idStatus:
+                          type: string
+                        idCustomer:
+                          type: string
+                        idDriver:
+                          type: string
+                        alamat:
+                          type: string
+                        createdAt:
+                          type: string
+                        updatedAt:
+                          type: string
+                        Status:
+                          type: object
+                          properties:
+                            namaStatus:
+                              type: string
+                        Customer:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                        Driver:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+  /process/list-order/jenisOrder={jenisOrder}:
+    get:
+      summary: jenisOrder? pickUp
+      security:
+        - bearerAuth: []
+      tags:
+        - Process
+      parameters:
+        - in: path
+          name: jenisOrder
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully fetch list order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  listPickUp:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idPickUp:
+                          type: string
+                        alamat:
+                          type: string
+                        createdAt:
+                          type: string
+                        Status:
+                          type: object
+                          properties:
+                            namaStatus:
+                              type: string
+                        Customer:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                        Driver:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+  /process/detail-order/jenisOrder={jenisOrder}&kodeOrder={kodeOrder}:
+    get:
+      summary: Detail order
+      security:
+        - bearerAuth: []
+      tags:
+        - Process
+      parameters:
+        - in: path
+          name: jenisOrder
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully fetch detail order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  order:
+                    type: object
+                    properties:
+                      idPickUp:
+                        type: string
+                      alamat:
+                        type: string
+                      createdAt:
+                        type: string
+                      Status:
+                        type: object
+                        properties:
+                          namaStatus:
+                            type: string
+                      Customer:
+                        type: object
+                        properties:
+                          fullName:
+                            type: string
+                          fotoProfile:
+                            type: string
+                      Driver:
+                        type: object
+                        properties:
+                          fullName:
+                            type: string
+                          fotoProfile:
+                            type: string
+                      listSampah:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            idSampah:
+                              type: string
+                            idPickUp:
+                              type: string
+                            idKategoriSampah:
+                              type: string
+                            deskripsiSampah:
+                              type: string
+                            beratSampah:
+                              type: string
+                            hargaSampah:
+                              type: string
+                            KategoriSampah:
+                              type: object
+                              properties:
+                                namaKategoriSampah:
+                                  type: string
+                      listBarang:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            idBarang:
+                              type: string
+                            idPickUp:
+                              type: string
+                            deskripsiBarang:
+                              type: string
+                            hargaBarang:
+                              type: string
+                            image:
+                              type: string
+  /pickup/make-order:
+    post:
+      summary: >-
+        Membuat order pick up oleh Customer (Kategori Sampah= Plastik, Kaca,
+        Kertas, Logam, Kardus, dan Lain-lain)
+      security:
+        - bearerAuth: []
+      tags:
+        - Pick Up
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                listSampah:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - kategori
+                      - deskripsi
+                    properties:
+                      kategori:
+                        type: string
+                        enum: ['Plastik','Kaca','Kertas','Logam','Kardus','Lain-lain']
+                        description: Kategori sampah
+                      deskripsi:
+                        type: string
+                        description: Deskripsi sampah
+                  example: []
+                listBarang:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - namaBarang
+                      - deskripsi
+                      - hargaBarang
+                    properties:
+                      namaBarang:
+                        type: string
+                        description: Nama barang
+                      deskripsi:
+                        type: string
+                        description: Deskripsi barang
+                      hargaBarang:
+                        type: number
+                        description: Harga barang
+                fotoBarang:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                    description: Gambar barang
+      responses:
+        '200':
+          description: Order berhasil dibuat dan informasi order dikembalikan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderId:
+                    type: string
+                    description: ID unik untuk order yang dibuat
+                  message:
+                    type: string
+                    description: Pesan konfirmasi order
+  /pickup/list-order:
+    get:
+      summary: Mendapatkan daftar order yang membutuhkan driver oleh driver
+      tags:
+        - Pick Up
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success fetch list order!
+                  listOrder:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idPickUp:
+                          type: string
+                          example: 1234567
+                        alamat:
+                          type: string
+                          example: Jalan Sesama No. 123
+                        Customer:
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                              example: Abdul
+  /pickup/detail-order/{kodeOrder}:
+    get:
+      summary: Mendapatkan detail order yang membutuhkan driver oleh driver
+      tags:
+        - Pick Up
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success fetch detail order!
+                  order:
+                    type: object
+                    properties:
+                      idPickUp:
+                        type: string
+                        example: 1234567
+                      alamat:
+                        type: string
+                        example: Jalan Sesama No. 123
+                      Customer:
+                        type: object
+                        properties:
+                          fullName:
+                            type: string
+                            example: Abdul
+                          fotoProfile:
+                            type: string
+                            example: https://example.com/profile.jpg
+                          noHP:
+                            type: string
+                            example: 081234567890
+                      listSampah:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            idSampah:
+                              type: string
+                              example: 1
+                            deskripsiSampah:
+                              type: string
+                              example: Botol Plastik
+                            kategoriSampah:
+                              type: object
+                              properties:
+                                namaKategoriSampah:
+                                  type: string
+                                  example: Plastik
+                      listBarang:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            idBarang:
+                              type: string
+                              example: 1
+                            namaBarang:
+                              type: string
+                              example: Barang elektronik
+                            deskripsiBarang:
+                              type: string
+                              example: Barang elektronik bekas
+                            hargaBarang:
+                              type: number
+                              example: 20000
+                            fotoBarang:
+                              type: string
+                              example: https://example.com/barang.jpg
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Orderan tidak ditemukan
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Akun anda tidak dapat mengambil orderan
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Akun anda tidak ditemukan
+  /pickup/take-order/{kodeOrder}:
+    put:
+      summary: Mengambil order oleh driver
+      security:
+        - bearerAuth: []
+      tags:
+        - Pick Up
+      parameters:
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success take order!
+  /pickup/take-sampah-order/{kodeOrder}:
+    put:
+      summary: Mengambil sampah dari order pick-up
+      security:
+        - bearerAuth: []
+      tags:
+        - Pick Up
+      parameters:
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success update status order to pengecekan!
+  /pickup/pengecekan-order/{kodeOrder}:
+    get:
+      summary: List sampah dari order pick-up
+      security:
+        - bearerAuth: []
+      tags:
+        - Pick Up
+      parameters:
+        - name: kodeOrder
+          in: path
+          required: true
+          description: Kode order pick up
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success fetch list barang dan sampah!
+                  listSampah:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idSampah:
+                          type: integer
+                        jenisSampah:
+                          type: string
+                        berat:
+                          type: number
+    put:
+      summary: Pengecekan order pick-up
+      security:
+        - bearerAuth: []
+      tags:
+        - Pick Up
+      parameters:
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                listSampah:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - idSampah
+                      - berat
+                    properties:
+                      idSampah:
+                        type: integer
+                        description: id sampah
+                      beratSampah:
+                        type: integer
+                        description: berat sampah
+                bukti:
+                  type: array
+                  maxItems: 2
+                  items:
+                    type: string
+                    format: binary
+                    description: Gambar untuk 0 video untuk 1
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success update status order to Konfirmasi!
+  /pickup/konfirmasi-order/{kodeOrder}:
+    put:
+      summary: Konfirmasi order pick-up by customer
+      security:
+        - bearerAuth: []
+      tags:
+        - Pick Up
+      parameters:
+        - in: path
+          name: kodeOrder
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success update status order to selesai!
+  /C:/Folder Penyimpanan/Dokumen/ITC/Project/file/OIP.jpeg: {}
+  /C:\Folder Penyimpanan\Dokumen\ITC\Project\file\OIP.jpeg: {}
+  /C:/Folder Penyimpanan/Dokumen/ITC\Project/file/OIP.jpeg:
+    summary: image

@@ -2,29 +2,65 @@ require('dotenv').config();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
+const cloudinary = require('../util/cloudinary_config');
+const fs = require('fs');
+const {multer, streamUpload} = require('../middleware/upload_file');
 const User = require('../model/User');
 const Role = require('../model/Role');
 const key = process.env.TOKEN_SECRET_KEY;
-const cloudinary = require('../util/cloudinary_config');
-const fs = require('fs');
-const Alamat = require('../model/Alamat');
 
 const postUser = async(req,res,next) => {
     try {
         const{
             userName, email, password, role, fullName, tanggalLahir, noHP
-        }=req.body
+        }=req.body;
 
-        if (password.length<5) {
-            const error = new Error(`Password harus memiliki 5 karakter`);
-            error.statusCode = 400;
-            throw error
+        const kurangData =[];
+
+        if (!userName){
+            kurangData.push('username');
         }
 
-        if (noHP.length<10) {
-            const error = new Error(`Nomor HP Anda Tidak Valid. Mohon Cek Kembali`);
+        if (!email){
+            kurangData.push('email');
+        }
+
+        if (!password){
+            kurangData.push('password');
+        }
+
+        if(!role){
+            kurangData.push('role');
+        }
+
+        if (!fullName){
+            kurangData.push('fullName');
+        }
+
+        if (!tanggalLahir){
+            kurangData.push('tanggalLahir');
+        }
+
+        if(!noHP){
+            kurangData.push('noHP');
+        }
+
+        if (kurangData.length > 0) {
+            const error = new Error(`Data yang diperlukan belum lengkap: ${kurangData.join(', ')}`);
             error.statusCode = 400;
-            throw error
+            throw error;
+        }
+
+        if(noHP.length<10){
+            const error = new Error('Nomor HP Anda tidak valid. Mohon cek kembali');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (password.length < 5) {
+            const error = new Error('Password harus memiliki minimal 5 karakter');
+            error.statusCode = 400;
+            throw error;
         }
 
         const checkUser = await User.findOne({
@@ -44,7 +80,7 @@ const postUser = async(req,res,next) => {
         });
 
         if (checkUser){
-            const error = new Error(`Username, email, noHP sudah dipakai. Mohon Ganti`);
+            const error = new Error(`Username, email, atau noHP sudah dipakai. Mohon Ganti`);
             error.statusCode = 409;
             throw error
         }
@@ -99,6 +135,22 @@ const loginHandler = async(req, res, next)=>{
             loginUser, password
         } = req.body;
 
+        const kurangData =[];
+
+        if (!loginUser){
+            kurangData.push('loginUser');
+        }
+
+        if (!password){
+            kurangData.push('password');
+        }
+
+        if (kurangData.length > 0) {
+            const error = new Error(`Data yang diperlukan belum lengkap: ${kurangData.join(', ')}`);
+            error.statusCode = 400;
+            throw error;
+        }
+
         const currentUser = await User.findOne({
             where:{
                 [Op.or]: [
@@ -118,7 +170,7 @@ const loginHandler = async(req, res, next)=>{
 
         if(!currentUser){
             const error = new Error("Salah akun atau password");
-            error.statusCode = 400;
+            error.statusCode = 404;
             throw error;
         }
 
@@ -126,7 +178,7 @@ const loginHandler = async(req, res, next)=>{
 
         if (checkPassword == false){
             const error = new Error("Salah akun atau password");
-            error.statusCode = 400;
+            error.statusCode = 404;
             throw error;
         }
         
@@ -144,6 +196,71 @@ const loginHandler = async(req, res, next)=>{
             token
         })
 
+
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            status: "Error",
+            message: error.message
+        })
+    }
+}
+
+const editFotoProfile = async(req, res, next) => {
+    try {
+        const authorization = req.headers.authorization;
+        let token;
+        if (!authorization || !authorization.startsWith("Bearer ")) {
+            const error = new Error("You need to login");
+            error.statusCode = 403;
+            throw error;
+        }
+
+        token = authorization.substring(7);
+        const decoded = jwt.verify(token, key);
+
+        const currentUser = await User.findOne({
+            where: {
+             idUser : decoded.Id,
+            }
+        });
+      
+        if (!currentUser) {
+            const error = new Error(`Akun dengan id ${decoded.Id} tidak ditemukan!`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        let imageUrl;
+
+        if (!req.file) {
+            const error = new Error(`Anda tidak mengirimkan file apa-apa`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const file = req.file;
+
+        if (!file.mimetype.startsWith('image/')) {
+            const error = new Error(`File yang diunggah bukan gambar`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const uploadOption = {
+            folder: 'fotoProfile/',
+            public_id: `user_${currentUser.idUser}`,
+            overwrite: true,
+        };
+        const result = await streamUpload(file, uploadOption);
+        imageUrl = result.secure_url;
+        currentUser.fotoProfile = imageUrl;
+        
+        await currentUser.save();
+
+        res.status(200).json({
+            status: "Success",
+            message:"Succesfully edit foto profile",
+        });
 
     } catch (error) {
         res.status(error.statusCode || 500).json({
@@ -194,43 +311,32 @@ const editUserAccount = async(req, res, next) => {
             currentUser.email = req.body.email
         }
 
-        let imageUrl;
-        if (req.file) {
-            const file = req.file.fotoProfile;
-
-            const uploadOption={
-                folder:'fotoProfile/',
-                public_id:`user_${currentUser.idUser}`,
-                overWrite:true
-            }
-
-            const uploadFile=await cloudinary.uploader.upload(file.path,uploadOption)
-            imageUrl=uploadFile.secure_url
-            //menghapus file yang diupload dalam local
-            fs.unlinkSync(file.path);
-            currentUser.fotoProfile=imageUrl;
-        }
-
         if (req.body.fullName){
             currentUser.fullName = req.body.fullName;
         }
-      
-        if (req.body.password){
-            const hashedPassword = await bcrypt.hash(req.body.password, 5);
-            currentUser.password = hashedPassword;
+
+        if (req.body.alamat){
+            currentUser.alamat = req.body.alamat;
         }
 
         if (req.body.tanggalLahir){
-            currentUser.tanggalLahir = req.body.tanggalLahir
+            currentUser.tanggalLahir = req.body.tanggalLahir;
+        }
+
+        if (req.body.jenisKelamin){
+            if (req.body.jenisKelamin != "Pria" && req.body.jenisKelamin != "Perempuan") {
+                const error = new Error("Masukkan jenis kelamin Pria atau Perempuan");
+                error.statusCode = 400;
+                throw error;
+            }
+            currentUser.jenisKelamin = req.body.jenisKelamin;
         }
 
         await currentUser.save();
-        await currentUser.reload();
 
         res.status(200).json({
             status: "Success",
             message:"Succesfully edit user data",
-            currentUser
         });
 
     } catch (error) {
@@ -257,7 +363,7 @@ const getUserDetail = async(req, res, next) => {
 
         const loggedUser = await User.findOne({
             attributes:[
-                'fullName', 'userName', 'email', 'noHP', 'tanggalLahir', 'tanggalGabung', 'fotoProfile', 'fotoBG'
+                'fullName', 'userName', 'email', 'noHP', 'alamat', 'jenisKelamin', 'tanggalLahir', 'tanggalGabung', 'fotoProfile'
             ],
             where: {
                 idUser: decoded.Id,
@@ -288,131 +394,6 @@ const getUserDetail = async(req, res, next) => {
     }
 }
 
-const getAlamatByToken = async(req, res, next) => {
-    try {
-        const authorization = req.headers.authorization;
-        let token;
-        if(authorization !== null & authorization.startsWith("Bearer ")){
-            token = authorization.substring(7); 
-        }else{  
-            const error = new Error("You need to login");
-            error.statusCode = 403;
-            throw error;
-        }
-      
-        const decoded = jwt.verify(token, key);
 
-        const loggedUser = await User.findOne({
-            where: {
-                idUser: decoded.Id,
-            }
-        });
 
-        if (!loggedUser) {
-            const error = new Error(`User with id ${decoded.id} not exist!`);
-            error.statusCode = 400;
-            throw error;
-        }
-
-        const alamatUser = await Alamat.findAll({
-            attributes:['alamatLengkap','tujuan'],
-            where: {
-                idUser: loggedUser.idUser
-            }
-        })
-
-        res.status(200).json({
-            status: "Success",
-            message: "Successfuly fetch Alamat",
-            alamatUser
-        })
-
-    } catch (error) {
-        res.status(error.statusCode || 500).json({
-            status: "Error",
-            message: error.message
-        })
-    }
-}
-
-const postAlamatByToken = async(req, res, next) => {
-    try {
-        const authorization = req.headers.authorization;
-        let token;
-        if(authorization !== null & authorization.startsWith("Bearer ")){
-            token = authorization.substring(7); 
-        }else{  
-            const error = new Error("You need to login");
-            error.statusCode = 403;
-            throw error;
-        }
-      
-        const decoded = jwt.verify(token, key);
-
-        const loggedUser = await User.findOne({
-            where: {
-                idUser: decoded.Id,
-            }
-        });
-
-        if (!loggedUser) {
-            const error = new Error(`User with id ${decoded.id} not exist!`);
-            error.statusCode = 400;
-            throw error;
-        }
-
-        const {alamatLengkap, tujuan} = req.body
-
-        const alamat = await Alamat.create({
-            alamatLengkap,
-            idUser: loggedUser.idUser,
-            tujuan
-        })
-
-        if (!alamat) {
-            const error = new Error(`Alamat yang dikirim error. Mohon Dicoba Kembali`);
-            error.statusCode = 400;
-            throw error;
-        }
-
-        res.status(200).json({
-            status: "Success",
-            message: "Successfuly register alamat",
-            Alamat: alamat.alamatLengkap
-        })
-
-    } catch (error) {
-        res.status(error.statusCode || 500).json({
-            status: "Error",
-            message: error.message
-        })
-    }
-}
-
-const getRiwayatByToken = async(req, res, next) => {
-    try {
-        const authorization = req.headers.authorization;
-        let token;
-        if(authorization !== null & authorization.startsWith("Bearer ")){
-            token = authorization.substring(7); 
-        }else{  
-            const error = new Error("You need to login");
-            error.statusCode = 403;
-            throw error;
-        }
-
-        res.status(200).json({
-            status: "Success",
-            message: "Successfuly fetch riwayat user data",
-            loggedUser
-        })
-
-    } catch (error) {
-        res.status(error.statusCode || 500).json({
-            status: "Error",
-            message: error.message
-        })
-    }
-}
-
-module.exports={postUser, loginHandler, editUserAccount, getUserDetail, getAlamatByToken, postAlamatByToken, getRiwayatByToken}
+module.exports={postUser, loginHandler, editFotoProfile, editUserAccount, getUserDetail}

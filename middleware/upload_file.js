@@ -1,15 +1,27 @@
-const multer = require('multer');
+const Multer = require("multer");
+const cloudinary = require("../util/cloudinary_config");
+const streamifier = require("streamifier");
 
-const storage = multer.diskStorage({
-  destination: function(req, file, cb){
-    cb(null, 'files');
-  },
-  filename: function(req,file,cb){
-    cb(null, file.originalname);
-  }
-})
+const multer = Multer({
+  storage: Multer.memoryStorage(),
+});
 
-const upload = multer({storage});
+const streamUpload = async (file, uploadOption) => {
+  uploadOption.resource_type = "auto";
+  return new Promise((resolve, reject) => {
+    let stream = cloudinary.uploader.upload_stream(
+      uploadOption,
+      (error, result) => {
+        if (result) {
+          resolve(result);
+        } else {
+          reject(error);
+        }
+      }
+    );
 
-module.exports = upload;
+    streamifier.createReadStream(file.buffer).pipe(stream);
+  });
+};
 
+module.exports = { multer, streamUpload };

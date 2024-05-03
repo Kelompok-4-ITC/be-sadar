@@ -28,6 +28,14 @@ const User = sequelize.define('users',{
     type: Sequelize.STRING,
     allowNull: false
   },
+  alamat:{
+    type: Sequelize.STRING,
+    allowNull: true
+  },
+  jenisKelamin:{
+    type: Sequelize.ENUM("Pria", "Perempuan"),
+    allowNull: true
+  },
   tanggalLahir:{
     type: Sequelize.DATEONLY,
     allowNull: false,
@@ -38,10 +46,6 @@ const User = sequelize.define('users',{
     defaultValue: Sequelize.NOW
   },
   fotoProfile:{
-    type: Sequelize.STRING,
-    allowNull: true
-  },
-  fotoBG:{
     type: Sequelize.STRING,
     allowNull: true
   },
